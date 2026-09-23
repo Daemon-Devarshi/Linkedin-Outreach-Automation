@@ -57,6 +57,17 @@ export const SELECTORS = {
       'main button[aria-label*="Send a message to"]'
     ],
 
+    // Follow button
+    followBtn: [
+      'button.org-company-follow-button',
+      'button.follow',
+      'button[aria-label="Follow"]',
+      'button[aria-label^="Follow"]',
+      'button.org-top-card-primary-actions__action',
+      'button:has-text("Follow")',
+      'a:has-text("Follow")'
+    ],
+
     // Invitation Dialog / Modal Selectors
     modalDialog: 'div[role="dialog"], .artdeco-modal',
     addNoteBtn: [

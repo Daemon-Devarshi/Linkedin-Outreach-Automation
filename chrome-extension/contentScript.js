@@ -68,6 +68,15 @@
       'main a[aria-label*="Withdraw"]',
       'main button[aria-label*="Withdraw"]'
     ],
+    followBtn: [
+      'button.org-company-follow-button',
+      'button.follow',
+      'button[aria-label="Follow"]',
+      'button[aria-label^="Follow"]',
+      'button.org-top-card-primary-actions__action',
+      'button:has-text("Follow")',
+      'a:has-text("Follow")'
+    ],
     modalDialog: 'div[role="dialog"], .artdeco-modal',
     addNoteBtn: [
       'button[aria-label="Add a note"]',
@@ -580,6 +589,24 @@
     // 1. Validate Company Page
     await validateProfilePage();
 
+    // Step: Click Follow button if present before sending message
+    try {
+      const followBtn = await waitForElement(SELECTORS.followBtn, 2000);
+      if (followBtn && isElementVisible(followBtn)) {
+        const ariaPressed = followBtn.getAttribute('aria-pressed');
+        const btnText = (followBtn.innerText || followBtn.textContent || '').trim().toLowerCase();
+        if (ariaPressed !== 'true' && btnText !== 'following') {
+          sendStep('Finding Follow button...', 'info');
+          safeClick(followBtn);
+          console.log('[LinkedIn Outreach] button clicked');
+          sendStep('button clicked', 'info');
+          await delay(1500);
+        }
+      }
+    } catch (followErr) {
+      console.warn('[LinkedIn Outreach] Follow button error:', followErr);
+    }
+
     // 2. Find Message Button
     sendStep('Finding Message button', 'info');
     let messageBtn = null;
@@ -761,6 +788,24 @@
     // 1. Validate Profile Page
     sendStep('Verifying target profile DOM...', 'info');
     await validateProfilePage();
+
+    // Step: Click Follow button if present before sending connection / message
+    try {
+      const followBtn = await waitForElement(SELECTORS.followBtn, 2000);
+      if (followBtn && isElementVisible(followBtn)) {
+        const ariaPressed = followBtn.getAttribute('aria-pressed');
+        const btnText = (followBtn.innerText || followBtn.textContent || '').trim().toLowerCase();
+        if (ariaPressed !== 'true' && btnText !== 'following') {
+          sendStep('Finding Follow button...', 'info');
+          safeClick(followBtn);
+          console.log('[LinkedIn Outreach] button clicked');
+          sendStep('button clicked', 'info');
+          await delay(1500);
+        }
+      }
+    } catch (followErr) {
+      console.warn('[LinkedIn Outreach] Follow button error:', followErr);
+    }
 
     // 2. Check if connection is already Pending
     for (const sel of SELECTORS.pending) {

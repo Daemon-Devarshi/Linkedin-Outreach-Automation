@@ -4,16 +4,51 @@ import logger from '../logging/logger.js';
 import { LinkedInMessageRecord } from '../input/json.js';
 
 /**
+ * Checks for and clicks the Follow button if present on the profile/company header.
+ * Logs "button clicked" when triggered, then allows the automation to proceed normally.
+ */
+export async function clickFollowButton(page: Page): Promise<boolean> {
+  try {
+    const followBtn = page.locator(SELECTORS.connection.followBtn).first();
+    const isVisible = await followBtn.isVisible().catch(() => false);
+    if (!isVisible) {
+      return false;
+    }
+
+    const ariaPressed = await followBtn.getAttribute('aria-pressed').catch(() => null);
+    const text = (await followBtn.innerText().catch(() => '')).trim().toLowerCase();
+    
+    // Skip if already followed or button indicates "Following"
+    if (ariaPressed === 'true' || text === 'following') {
+      return false;
+    }
+
+    logger.info('Finding Follow button...');
+    await followBtn.evaluate((el: HTMLElement) => el.click()).catch(() => followBtn.click({ force: true }));
+    logger.info('button clicked');
+    await page.waitForTimeout(1500);
+    return true;
+  } catch (error: any) {
+    logger.warn(`Follow action error: ${error.message}`);
+    return false;
+  }
+}
+
+/**
  * Handles the complete connection action:
- * 1. Checks if connection is already pending or if user is already connected (skips if so).
- * 2. Clicks Connect (tries direct button, falls back to "More" actions menu).
- * 3. Handles invitation modal: clicks "Add a note", fills the text area, and clicks Send.
- * 4. Verifies the request was successfully sent.
+ * 1. Checks and clicks the Follow button if available on the profile.
+ * 2. Checks if connection is already pending or if user is already connected (skips if so).
+ * 3. Clicks Connect (tries direct button, falls back to "More" actions menu).
+ * 4. Handles invitation modal: clicks "Add a note", fills the text area, and clicks Send.
+ * 5. Verifies the request was successfully sent.
  * 
  * @param page Playwright Page instance.
  * @param record Message record containing URL and personalized message.
  */
 export async function sendConnectionRequest(page: Page, record: LinkedInMessageRecord): Promise<void> {
+  // Click follow button before sending message if present
+  await clickFollowButton(page);
+
   logger.info('Analyzing profile connection state...');
 
   // Step 1: Check for Direct Connect button on profile header

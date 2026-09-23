@@ -31,6 +31,9 @@ export const SELECTORS = {
     pending: 'main a[aria-label*="Pending"]:visible, main button[aria-label*="Pending"]:visible, main a[aria-label*="Withdraw"]:visible, main button[aria-label*="Withdraw"]:visible',
     message: 'main a:has-text("Message"):visible, main button:has-text("Message"):visible',
     
+    // Follow Button
+    followBtn: 'button.org-company-follow-button:visible, button.follow:visible, button[aria-label="Follow"]:visible, button[aria-label^="Follow"]:visible, button.org-top-card-primary-actions__action:has-text("Follow"):visible, button:has-text("Follow"):visible, a:has-text("Follow"):visible',
+
     // Invitation Modal
     addNoteBtn: 'a:has-text("Add a note"):visible, button:has-text("Add a note"):visible, [aria-label="Add a note"]:visible',
     sendWithoutNoteBtn: 'a:has-text("Send without a note"):visible, button:has-text("Send without a note"):visible',
