@@ -7,7 +7,8 @@ const STORAGE_KEYS = {
   QUEUE: 'linkedin_outreach_queue',
   HISTORY: 'linkedin_outreach_history',
   SETTINGS: 'linkedin_outreach_settings',
-  RUNNING_STATE: 'linkedin_outreach_running_state'
+  RUNNING_STATE: 'linkedin_outreach_running_state',
+  ACTIVE_CRM_BATCH: 'linkedin_active_crm_batch'
 };
 
 const DEFAULT_SETTINGS = {
@@ -72,4 +73,13 @@ export async function setRunningState(state) {
 
 export async function clearAllHistory() {
   await chrome.storage.local.set({ [STORAGE_KEYS.HISTORY]: [] });
+}
+
+export async function getActiveCRMBatch() {
+  const data = await chrome.storage.local.get(STORAGE_KEYS.ACTIVE_CRM_BATCH);
+  return data[STORAGE_KEYS.ACTIVE_CRM_BATCH] || null;
+}
+
+export async function setActiveCRMBatch(batch) {
+  await chrome.storage.local.set({ [STORAGE_KEYS.ACTIVE_CRM_BATCH]: batch });
 }

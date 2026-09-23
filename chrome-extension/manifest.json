@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Outreach Automation",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Automate LinkedIn connection requests with personalized notes, human pacing, and real-time tracking.",
   "permissions": [
     "tabs",
@@ -10,7 +10,12 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://*.linkedin.com/*"
+    "https://*.linkedin.com/*",
+    "https://linkedin.com/*",
+    "http://localhost/*",
+    "http://localhost:*/*",
+    "http://127.0.0.1/*",
+    "http://127.0.0.1:*/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -23,12 +28,43 @@
   "content_scripts": [
     {
       "matches": [
-        "https://*.linkedin.com/in/*"
+        "https://*.linkedin.com/*",
+        "https://linkedin.com/*"
       ],
       "js": [
         "contentScript.js"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost/*",
+        "http://localhost:*/*",
+        "http://127.0.0.1/*",
+        "http://127.0.0.1:*/*"
+      ],
+      "js": [
+        "crmBridge.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "popup.html",
+        "styles.css",
+        "popup.js",
+        "modules/*"
+      ],
+      "matches": [
+        "https://*.linkedin.com/*",
+        "https://linkedin.com/*",
+        "http://localhost/*",
+        "http://localhost:*/*",
+        "http://127.0.0.1/*",
+        "http://127.0.0.1:*/*"
+      ]
     }
   ]
 }

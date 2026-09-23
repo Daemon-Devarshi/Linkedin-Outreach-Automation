@@ -83,5 +83,75 @@ export const SELECTORS = {
       'button[aria-label^="Send"]',
       'button:has-text("Send")'
     ]
+  },
+
+  // Company Page Messaging Selectors
+  company: {
+    messageBtn: [
+      'button[aria-label^="Message "]',
+      'button[aria-label*="Message"]',
+      'button:has(svg[data-test-icon="send-privately-small"])',
+      '.org-top-card-primary-actions__inner button:has-text("Message")',
+      '.org-top-card-primary-actions button:has-text("Message")',
+      'main section button:has-text("Message")',
+      'main button:has-text("Message")',
+      'main a:has-text("Message")',
+      '.org-top-card button:has-text("Message")'
+    ],
+    // Conversation Topic Selectors
+    topicDropdown: [
+      'select[name*="topic" i]',
+      'select[id*="topic" i]',
+      'div.artdeco-dropdown button[aria-label*="topic" i]',
+      'div.artdeco-dropdown button[aria-label*="Conversation topic" i]',
+      'button[aria-label*="Conversation topic" i]',
+      'button[aria-label*="topic" i]',
+      'div[role="combobox"][aria-label*="topic" i]',
+      'div.msg-form__topic-selector button',
+      'div.org-message-dialog__topic-select button'
+    ],
+    topicDropdownContainer: [
+      'div.artdeco-dropdown',
+      'div[data-artdeco-is-focused]',
+      'fieldset:has-text("Conversation topic")',
+      'div:has-text("Conversation topic *")',
+      'div:has-text("Conversation topic")'
+    ],
+    topicOptions: [
+      'div[role="listbox"] [role="option"]',
+      'div.artdeco-dropdown__content [role="option"]',
+      'div.artdeco-dropdown__content li',
+      'div.artdeco-dropdown__content button',
+      'div.artdeco-dropdown__content span.artdeco-dropdown__item-text',
+      'div.artdeco-dropdown__content div[role="button"]'
+    ],
+    composer: [
+      'div.msg-form__contenteditable[role="textbox"]',
+      'div.msg-form__contenteditable',
+      'div[role="textbox"][aria-label*="message" i]',
+      'div[role="textbox"][aria-label*="Write a message" i]',
+      '.msg-form__message-texteditor div[role="textbox"]',
+      'div.msg-form__msg-content-container div[role="textbox"]',
+      'div[contenteditable="true"]',
+      'textarea[name="message"]',
+      'textarea.msg-form__textarea'
+    ],
+    sendBtn: [
+      'button:has-text("Send message")',
+      'button[aria-label*="Send message" i]',
+      'button.msg-form__send-button:not([disabled])',
+      'button.msg-form__send-button',
+      'button[type="submit"].msg-form__send-btn',
+      'button[type="submit"]:not([disabled])',
+      'form.msg-form button[type="submit"]',
+      'button[aria-label="Send now"]',
+      'button[aria-label^="Send"]'
+    ],
+    threadContainer: [
+      '.msg-s-message-list',
+      '.msg-s-event-listitem',
+      '.msg-s-message-group',
+      '.msg-overlay-conversation-bubble'
+    ]
   }
 };

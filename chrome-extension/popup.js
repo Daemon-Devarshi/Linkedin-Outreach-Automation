@@ -1,9 +1,11 @@
 /**
  * Popup Script for LinkedIn Outreach Extension
- * Manages tabs, handles form submissions, communicates with background service worker, and updates stats.
+ * Manages tabs, handles form submissions, communicates with background service worker,
+ * updates stats, and connects directly to the CRM Portal.
  */
 
-import { getQueue, setQueue, getHistory, getSettings, saveSettings, clearAllHistory, getRunningState } from './modules/storage.js';
+import { getQueue, setQueue, getHistory, getSettings, saveSettings, clearAllHistory, getRunningState, setActiveCRMBatch } from './modules/storage.js';
+import { getCRMSettings, saveCRMSettings, checkCRMHealth, fetchLinkedInBatches, fetchBatchDetails, startSendJob } from './modules/crmClient.js';
 
 // DOM Elements
 const tabButtons = document.querySelectorAll('.tab-btn');
@@ -36,11 +38,27 @@ const settingMaxDelay = document.getElementById('setting-max-delay');
 const settingDailyLimit = document.getElementById('setting-daily-limit');
 const btnSaveSettings = document.getElementById('btn-save-settings');
 
+// CRM Elements
+const crmStatusBadge = document.getElementById('crm-status-badge');
+const crmApiUrl = document.getElementById('crm-api-url');
+const crmApiKey = document.getElementById('crm-api-key');
+const btnTestCrm = document.getElementById('btn-test-crm');
+const btnSaveCrmCfg = document.getElementById('btn-save-crm-cfg');
+const btnRefreshCrmBatches = document.getElementById('btn-refresh-crm-batches');
+const crmBatchSelect = document.getElementById('crm-batch-select');
+const crmBatchSummary = document.getElementById('crm-batch-summary');
+const btnLoadCrmBatch = document.getElementById('btn-load-crm-batch');
+const btnStartCrmBatch = document.getElementById('btn-start-crm-batch');
+
+let loadedCRMBatches = [];
+
 // Initialize on popup open
 document.addEventListener('DOMContentLoaded', async () => {
   setupTabs();
+  setupCRMEvents();
   await loadSavedData();
   await refreshState();
+  await testCRMConnection();
 });
 
 /**
@@ -58,6 +76,8 @@ function setupTabs() {
 
       if (btn.dataset.tab === 'tab-history') {
         renderHistory();
+      } else if (btn.dataset.tab === 'tab-crm') {
+        loadCRMBatchesList();
       }
     });
   });
@@ -80,8 +100,188 @@ async function loadSavedData() {
   settingMaxDelay.value = settings.maxDelay || 12;
   settingDailyLimit.value = settings.dailyLimit || 30;
 
+  // Load CRM Settings
+  const crmCfg = await getCRMSettings();
+  if (crmApiUrl) crmApiUrl.value = crmCfg.apiUrl || 'http://localhost:3002';
+  if (crmApiKey) crmApiKey.value = crmCfg.apiKey || '';
+
   // Load History Summary Stats
   await updateStatsFromHistory();
+}
+
+/**
+ * Setup CRM integration events
+ */
+function setupCRMEvents() {
+  if (btnTestCrm) {
+    btnTestCrm.addEventListener('click', async () => {
+      await testCRMConnection(true);
+    });
+  }
+
+  if (btnSaveCrmCfg) {
+    btnSaveCrmCfg.addEventListener('click', async () => {
+      const cfg = {
+        apiUrl: crmApiUrl.value.trim(),
+        apiKey: crmApiKey.value.trim()
+      };
+      await saveCRMSettings(cfg);
+      alert('CRM Configuration saved!');
+      await testCRMConnection(true);
+    });
+  }
+
+  if (btnRefreshCrmBatches) {
+    btnRefreshCrmBatches.addEventListener('click', async () => {
+      await loadCRMBatchesList();
+    });
+  }
+
+  if (crmBatchSelect) {
+    crmBatchSelect.addEventListener('change', () => {
+      const selectedNo = crmBatchSelect.value;
+      const found = loadedCRMBatches.find(b => b.batch_no === selectedNo);
+      if (found && crmBatchSummary) {
+        crmBatchSummary.style.display = 'block';
+        crmBatchSummary.innerHTML = `
+          <strong>Batch #${escapeHtml(found.batch_no)}</strong> (${escapeHtml(found.entity_type)})<br>
+          Status: <span class="tag ${found.status === 'COMPLETED' || found.status === 'SENT' ? 'tag-success' : 'tag-skipped'}">${escapeHtml(found.status)}</span> · 
+          Sent: <strong>${found.sent_count || 0}</strong> · Pending: <strong>${found.pending_count || 0}</strong> · Total: <strong>${found.total_count || 0}</strong>
+        `;
+      } else if (crmBatchSummary) {
+        crmBatchSummary.style.display = 'none';
+      }
+    });
+  }
+
+  if (btnLoadCrmBatch) {
+    btnLoadCrmBatch.addEventListener('click', async () => {
+      await handleLoadBatchToQueue(false);
+    });
+  }
+
+  if (btnStartCrmBatch) {
+    btnStartCrmBatch.addEventListener('click', async () => {
+      await handleLoadBatchToQueue(true);
+    });
+  }
+}
+
+async function testCRMConnection(showAlert = false) {
+  if (!crmStatusBadge) return;
+  crmStatusBadge.textContent = 'Checking...';
+  crmStatusBadge.className = 'tag tag-skipped';
+
+  const health = await checkCRMHealth();
+  if (health.connected) {
+    crmStatusBadge.textContent = health.authenticated ? 'Connected' : 'Reachable (Auth Req)';
+    crmStatusBadge.className = 'tag tag-success';
+    if (showAlert) alert(health.message);
+  } else {
+    crmStatusBadge.textContent = 'Disconnected';
+    crmStatusBadge.className = 'tag tag-failed';
+    if (showAlert) alert(health.message);
+  }
+}
+
+async function loadCRMBatchesList() {
+  if (!crmBatchSelect) return;
+  crmBatchSelect.innerHTML = '<option value="">Loading batches from CRM...</option>';
+
+  try {
+    const data = await fetchLinkedInBatches({ limit: 50 });
+    loadedCRMBatches = data.batches || [];
+
+    if (loadedCRMBatches.length === 0) {
+      crmBatchSelect.innerHTML = '<option value="">No LinkedIn batches found in CRM</option>';
+      return;
+    }
+
+    crmBatchSelect.innerHTML = '<option value="">-- Select a LinkedIn Batch --</option>' +
+      loadedCRMBatches.map(b => `
+        <option value="${escapeHtml(b.batch_no)}">
+          ${escapeHtml(b.batch_no)} (${b.entity_type}) - ${b.status} (${b.sent_count || 0}/${b.total_count || 0} Sent)
+        </option>
+      `).join('');
+
+  } catch (err) {
+    console.error('Error loading CRM batches:', err);
+    crmBatchSelect.innerHTML = `<option value="">Error: ${escapeHtml(err.message)}</option>`;
+  }
+}
+
+async function handleLoadBatchToQueue(startImmediately = false) {
+  const selectedBatchNo = crmBatchSelect ? crmBatchSelect.value : '';
+  if (!selectedBatchNo) {
+    alert('Please select a LinkedIn batch first.');
+    return;
+  }
+
+  try {
+    const batchDetails = await fetchBatchDetails(selectedBatchNo);
+    const executionPayload = batchDetails.executionPayload;
+
+    if (!executionPayload || !Array.isArray(executionPayload.records) || executionPayload.records.length === 0) {
+      alert(`Batch ${selectedBatchNo} has no target records.`);
+      return;
+    }
+
+    // Convert records to extension queue format
+    const queueRecords = executionPayload.records.map(r => {
+      const rawUrl = r.linkedinProfile || r.url || r.linkedin_url || r.profileUrl || r.profile_url || r.target_url || '';
+      const isCompany = r.targetType === 'company' || r.actionType === 'COMPANY_MESSAGE' || (rawUrl && rawUrl.includes('/company/'));
+      const actionType = r.actionType || (isCompany ? 'COMPANY_MESSAGE' : 'PERSONAL_CONNECT');
+      const targetType = r.targetType || (isCompany ? 'company' : 'personal');
+      const defaultUrl = r.username ? (isCompany ? `https://www.linkedin.com/company/${r.username}/` : `https://www.linkedin.com/in/${r.username}/`) : '';
+
+      return {
+        jobId: r.jobId || r.job_id,
+        batchId: r.batchId || r.batch_id || selectedBatchNo,
+        leadId: r.leadId || r.lead_id || r.record_id || r.id,
+        itemId: r.itemId || r.item_id,
+        actionType: actionType,
+        targetType: targetType,
+        username: r.username || '',
+        displayName: r.displayName || r.name || r.username || '',
+        url: rawUrl || defaultUrl,
+        linkedinProfile: rawUrl || defaultUrl,
+        message: r.message || r.custom_message || r.note || '',
+        senderAccountId: r.senderAccountId,
+        senderName: r.senderName || 'Tanweer'
+      };
+    });
+
+    await setActiveCRMBatch({
+      batchId: selectedBatchNo,
+      senderName: executionPayload.senderName || 'Tanweer'
+    });
+    await setQueue(queueRecords);
+
+    jsonInput.value = JSON.stringify(queueRecords, null, 2);
+    queueSummaryFooter.textContent = `Queue: ${queueRecords.length} profiles`;
+
+    if (startImmediately) {
+      // Mark as started in CRM
+      try {
+        await startSendJob(selectedBatchNo, 'Tanveer');
+      } catch (e) {
+        console.warn('Notice sending start job to CRM:', e.message);
+      }
+
+      // Switch to Monitor Tab & trigger campaign
+      document.querySelector('[data-tab="tab-monitor"]').click();
+      chrome.runtime.sendMessage({ action: 'START_CAMPAIGN' }, () => {
+        appendLog(`🚀 Started outreach for CRM Batch #${selectedBatchNo}`, 'info');
+        refreshState();
+      });
+    } else {
+      alert(`Successfully loaded ${queueRecords.length} profiles from Batch #${selectedBatchNo} into Queue!`);
+      document.querySelector('[data-tab="tab-campaign"]').click();
+    }
+
+  } catch (err) {
+    alert(`Failed to load batch: ${err.message}`);
+  }
 }
 
 /**
@@ -119,9 +319,9 @@ async function refreshState() {
 btnLoadSample.addEventListener('click', () => {
   const sample = [
     {
-      username: "example-tech-founder",
-      url: "https://www.linkedin.com/in/example-tech-founder/",
-      message: "Hi there! Came across your profile and would love to connect and follow your journey in tech."
+      username: "satyanadella",
+      url: "https://www.linkedin.com/in/satyanadella/",
+      message: "Hi Satya, excited to connect with you!"
     },
     {
       username: "example-recruiter",
@@ -177,7 +377,7 @@ btnStart.addEventListener('click', async () => {
     document.querySelector('[data-tab="tab-monitor"]').click();
 
     // Trigger background start
-    chrome.runtime.sendMessage({ action: 'START_CAMPAIGN' }, (response) => {
+    chrome.runtime.sendMessage({ action: 'START_CAMPAIGN' }, () => {
       appendLog('Campaign dispatched to background worker.', 'info');
       refreshState();
     });

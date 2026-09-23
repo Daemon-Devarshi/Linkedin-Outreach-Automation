@@ -20,6 +20,7 @@
   <!-- Navigation Tabs -->
   <nav class="nav-tabs">
     <button class="tab-btn active" data-tab="tab-campaign">Campaign</button>
+    <button class="tab-btn" data-tab="tab-crm">CRM Batches</button>
     <button class="tab-btn" data-tab="tab-monitor">Monitor</button>
     <button class="tab-btn" data-tab="tab-history">History</button>
     <button class="tab-btn" data-tab="tab-settings">Settings</button>
@@ -48,6 +49,46 @@
       <div class="action-row">
         <button id="btn-save-queue" class="btn btn-secondary btn-block">Save Queue</button>
         <button id="btn-start" class="btn btn-primary btn-block">🚀 Start Outreach</button>
+      </div>
+    </section>
+
+    <!-- Tab 2: CRM Portal Integration -->
+    <section id="tab-crm" class="tab-pane">
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <strong style="font-size: 12px; color: #1e293b;">CRM Connection Status:</strong>
+          <span id="crm-status-badge" class="tag tag-skipped">Checking...</span>
+        </div>
+        <div class="form-group" style="margin-bottom: 6px;">
+          <label for="crm-api-url" style="font-size: 11px;">CRM Portal URL:</label>
+          <input type="text" id="crm-api-url" placeholder="http://localhost:3002" value="http://localhost:3002">
+        </div>
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label for="crm-api-key" style="font-size: 11px;">API Key (Optional for Scraper/Admin):</label>
+          <input type="password" id="crm-api-key" placeholder="Enter CRM API Key...">
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button id="btn-test-crm" class="btn btn-secondary btn-sm" style="flex: 1;">🔌 Test Connection</button>
+          <button id="btn-save-crm-cfg" class="btn btn-primary btn-sm" style="flex: 1;">💾 Save Config</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label for="crm-batch-select" style="margin-bottom: 0; font-weight: 600;">LinkedIn Batches in CRM:</label>
+          <button id="btn-refresh-crm-batches" class="btn btn-secondary btn-sm" type="button">↻ Refresh</button>
+        </div>
+        <select id="crm-batch-select" style="width: 100%; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; background: white; margin-bottom: 8px;">
+          <option value="">-- Click Refresh to load CRM batches --</option>
+        </select>
+        <div id="crm-batch-summary" style="font-size: 11px; color: #64748b; margin-bottom: 10px; background: #fff; padding: 6px 8px; border-radius: 4px; border: 1px dashed #cbd5e1; display: none;">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button id="btn-load-crm-batch" class="btn btn-secondary btn-block">📥 Load into Queue</button>
+        <button id="btn-start-crm-batch" class="btn btn-primary btn-block">🚀 Run Batch</button>
       </div>
     </section>
 
