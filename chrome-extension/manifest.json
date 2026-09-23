@@ -12,6 +12,7 @@
   "host_permissions": [
     "https://*.linkedin.com/*",
     "https://linkedin.com/*",
+    "https://crm.colabpetals.com/*",
     "http://localhost/*",
     "http://localhost:*/*",
     "http://127.0.0.1/*",
@@ -38,6 +39,7 @@
     },
     {
       "matches": [
+        "https://crm.colabpetals.com/*",
         "http://localhost/*",
         "http://localhost:*/*",
         "http://127.0.0.1/*",
@@ -60,6 +62,7 @@
       "matches": [
         "https://*.linkedin.com/*",
         "https://linkedin.com/*",
+        "https://crm.colabpetals.com/*",
         "http://localhost/*",
         "http://localhost:*/*",
         "http://127.0.0.1/*",

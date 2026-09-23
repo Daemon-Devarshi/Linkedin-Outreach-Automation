@@ -9,7 +9,7 @@ const STORAGE_KEYS = {
 };
 
 const DEFAULT_CRM_SETTINGS = {
-  apiUrl: 'http://localhost:3002',
+  apiUrl: 'https://crm.colabpetals.com',
   apiKey: ''
 };
 
@@ -30,7 +30,7 @@ export async function getCRMSettings() {
  */
 export async function saveCRMSettings(settings) {
   const clean = {
-    apiUrl: (settings.apiUrl || 'http://localhost:3002').replace(/\/$/, ''),
+    apiUrl: (settings.apiUrl || 'https://crm.colabpetals.com').replace(/\/$/, ''),
     apiKey: (settings.apiKey || '').trim()
   };
   await chrome.storage.local.set({ [STORAGE_KEYS.CRM_SETTINGS]: clean });

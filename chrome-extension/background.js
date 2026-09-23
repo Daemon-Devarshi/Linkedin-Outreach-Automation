@@ -24,7 +24,7 @@ chrome.runtime.onInstalled.addListener(() => {
  */
 async function getApiUrl() {
   const cfg = await getCRMSettings();
-  return cfg.apiUrl || 'http://localhost:3002';
+  return cfg.apiUrl || 'https://crm.colabpetals.com';
 }
 
 /**

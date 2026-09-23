@@ -102,7 +102,7 @@ async function loadSavedData() {
 
   // Load CRM Settings
   const crmCfg = await getCRMSettings();
-  if (crmApiUrl) crmApiUrl.value = crmCfg.apiUrl || 'http://localhost:3002';
+  if (crmApiUrl) crmApiUrl.value = crmCfg.apiUrl || 'https://crm.colabpetals.com';
   if (crmApiKey) crmApiKey.value = crmCfg.apiKey || '';
 
   // Load History Summary Stats
