@@ -72,6 +72,20 @@ export const SELECTORS = {
       'a:has-text("Follow")'
     ],
 
+    // Confirmation dialog Cancel button
+    cancelModalBtn: [
+      'button[data-test-dialog-secondary-btn]',
+      'button.artdeco-modal__confirm-dialog-btn',
+      'button:has-text("Cancel")'
+    ],
+
+    // Skip turning on notifications post-follow popup ("Not now")
+    skipNotificationsBtn: [
+      'button[aria-label*="Skip turning on all notifications" i]',
+      'button:has-text("Not now")',
+      'button.artdeco-button:has-text("Not now")'
+    ],
+
     // Invitation Dialog / Modal Selectors
     modalDialog: 'div[role="dialog"], .artdeco-modal',
     addNoteBtn: [

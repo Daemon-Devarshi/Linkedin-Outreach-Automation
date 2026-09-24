@@ -77,6 +77,18 @@
       'button:has-text("Follow")',
       'a:has-text("Follow")'
     ],
+    // Confirmation dialog Cancel button
+    cancelModalBtn: [
+      'button[data-test-dialog-secondary-btn]',
+      'button.artdeco-modal__confirm-dialog-btn',
+      'button:has-text("Cancel")'
+    ],
+    // Skip turning on notifications post-follow popup ("Not now")
+    skipNotificationsBtn: [
+      'button[aria-label*="Skip turning on all notifications" i]',
+      'button:has-text("Not now")',
+      'button.artdeco-button:has-text("Not now")'
+    ],
     modalDialog: 'div[role="dialog"], .artdeco-modal',
     addNoteBtn: [
       'button[aria-label="Add a note"]',
@@ -471,57 +483,130 @@
   }
 
   /**
+   * Dismisses any post-follow or confirmation popups:
+   * 1. If an "Unfollow" confirmation dialog appeared (with a "Cancel" button), clicks "Cancel".
+   * 2. If a notification prompt appeared (e.g. "Skip turning on all notifications" / "Not now"), clicks "Not now".
+   */
+  async function dismissPostFollowModals() {
+    await delay(600);
+
+    // 1. Check for confirmation modal Cancel button
+    // User element: <button ... class="artdeco-modal__confirm-dialog-btn" data-test-dialog-secondary-btn=""><span class="artdeco-button__text">Cancel</span></button>
+    const cancelBtn = Array.from(document.querySelectorAll(
+      'button[data-test-dialog-secondary-btn], button.artdeco-modal__confirm-dialog-btn, div[role="dialog"] button, .artdeco-modal button'
+    )).find(btn => {
+      if (!isElementVisible(btn)) return false;
+      const txt = (btn.innerText || btn.textContent || '').trim().toLowerCase();
+      const aria = (btn.getAttribute('aria-label') || '').toLowerCase();
+      return txt === 'cancel' || aria === 'cancel' || btn.hasAttribute('data-test-dialog-secondary-btn');
+    });
+
+    if (cancelBtn) {
+      console.log('[LinkedIn Outreach] Found confirmation dialog Cancel button. Clicking Cancel...');
+      sendStep('Dismissing dialog (Cancel)...', 'info');
+      safeClick(cancelBtn);
+      await delay(1200);
+    }
+
+    // 2. Check for "Not now" notification prompt button
+    // User element: <button aria-label="Skip turning on all notifications from Scaler" ...><span class="artdeco-button__text">Not now</span></button>
+    const notNowBtn = Array.from(document.querySelectorAll(
+      'button[aria-label*="Skip turning on all notifications" i], button.artdeco-button, div[role="dialog"] button, .artdeco-modal button, button'
+    )).find(btn => {
+      if (!isElementVisible(btn)) return false;
+      const aria = (btn.getAttribute('aria-label') || '').toLowerCase();
+      const txt = (btn.innerText || btn.textContent || '').trim().toLowerCase();
+      return (
+        aria.includes('skip turning on all notifications') ||
+        txt === 'not now' ||
+        txt.includes('not now')
+      );
+    });
+
+    if (notNowBtn) {
+      console.log('[LinkedIn Outreach] Found notification prompt "Not now" button. Clicking Not now...');
+      sendStep('Dismissing notification prompt (Not now)...', 'info');
+      safeClick(notNowBtn);
+      await delay(1200);
+    }
+  }
+
+  /**
    * Ultra-reliable Follow button detector and clicker
-   * Works with both modern obfuscated class layouts and classic layouts on Company & Personal pages.
+   * Strictly checks if already followed; single-clicks Follow if not followed;
+   * dismisses any Cancel confirmation or Not Now notification modals.
    */
   async function handleFollowAction(timeoutMs = 6000) {
     sendStep('Checking Follow status...', 'info');
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeoutMs) {
+      // First, dismiss any existing modals if already open
+      await dismissPostFollowModals();
+
       const allClickables = Array.from(document.querySelectorAll('button, a, div[role="button"], [componentkey]'));
 
-      // Check if already followed
+      // 1. Check if already followed (strictly skip and do not click)
       const alreadyFollowing = allClickables.some(el => {
         if (!isElementVisible(el)) return false;
         const aria = (el.getAttribute('aria-label') || '').trim().toLowerCase();
         const text = (el.innerText || el.textContent || '').trim().toLowerCase();
         const ariaPressed = el.getAttribute('aria-pressed');
-        return ariaPressed === 'true' || aria.startsWith('following') || aria.startsWith('unfollow') || text === 'following' || text === 'unfollow';
+        const hasCheckSvg = Boolean(el.querySelector('svg[data-test-icon*="check"], svg#check-small'));
+
+        return (
+          ariaPressed === 'true' ||
+          el.classList.contains('artdeco-button--selected') ||
+          aria.includes('following') ||
+          aria.includes('unfollow') ||
+          text.includes('following') ||
+          text.includes('unfollow') ||
+          (hasCheckSvg && text.includes('follow'))
+        );
       });
 
       if (alreadyFollowing) {
         console.log('[LinkedIn Outreach] Already following profile/company.');
-        sendStep('Already following. Proceeding...', 'info');
+        sendStep('Already following. Proceeding to message...', 'info');
+        await dismissPostFollowModals();
         return { followed: false, alreadyFollowing: true };
       }
 
-      // Find follow button
+      // 2. Find follow button
       const followBtn = allClickables.find(el => {
         if (!isElementVisible(el)) return false;
 
-        const aria = (el.getAttribute('aria-label') || '').trim();
-        const text = (el.innerText || el.textContent || '').trim();
+        const aria = (el.getAttribute('aria-label') || '').trim().toLowerCase();
+        const text = (el.innerText || el.textContent || '').trim().toLowerCase();
         const ariaPressed = el.getAttribute('aria-pressed');
+        const hasCheckSvg = Boolean(el.querySelector('svg[data-test-icon*="check"], svg#check-small'));
 
-        if (ariaPressed === 'true') return false;
-        if (/^(following|unfollow)/i.test(aria) || /^(following|unfollow)/i.test(text)) {
+        // Strictly exclude already following or unfollowing states
+        if (
+          ariaPressed === 'true' ||
+          el.classList.contains('artdeco-button--selected') ||
+          hasCheckSvg ||
+          aria.includes('following') ||
+          aria.includes('unfollow') ||
+          text.includes('following') ||
+          text.includes('unfollow')
+        ) {
           return false;
         }
 
-        // Match aria-label (e.g. "Follow Wiingy", "Follow", "Follow Company")
-        if (/^follow\b/i.test(aria) || /^follow\s+/i.test(aria)) {
+        // Match aria-label (e.g. "Follow Scaler", "Follow", "Follow Company")
+        if (/^follow\b/i.test(aria) || /^follow\s+/i.test(aria) || aria === 'follow') {
           return true;
         }
 
         // Match exact text "Follow" or starting with "Follow "
-        if (/^follow(\s+.*)?$/i.test(text) && !/following/i.test(text)) {
+        if (/^follow(\s+.*)?$/i.test(text)) {
           return true;
         }
 
         // Match SVG add-small icon inside button
         const hasAddSvg = el.querySelector('svg#add-small, svg[id="add-small"], svg[data-test-icon="add-small"], svg[data-test-icon*="add"]');
-        if (hasAddSvg && (/follow/i.test(aria) || /follow/i.test(text) || text === 'Follow' || text.length === 0)) {
+        if (hasAddSvg && (text === 'follow' || text.length === 0 || aria.startsWith('follow'))) {
           return true;
         }
 
@@ -536,24 +621,19 @@
           followBtn.scrollIntoView({ behavior: 'auto', block: 'center' });
           await delay(400);
 
-          followBtn.focus();
-          const evtOpts = { bubbles: true, cancelable: true, view: window };
-          followBtn.dispatchEvent(new PointerEvent('pointerdown', evtOpts));
-          followBtn.dispatchEvent(new MouseEvent('mousedown', evtOpts));
-          followBtn.dispatchEvent(new PointerEvent('pointerup', evtOpts));
-          followBtn.dispatchEvent(new MouseEvent('mouseup', evtOpts));
-          followBtn.dispatchEvent(new MouseEvent('click', evtOpts));
-          followBtn.click();
-
-          const innerSpan = followBtn.querySelector('span');
-          if (innerSpan) {
-            innerSpan.dispatchEvent(new MouseEvent('click', evtOpts));
-          }
+          // Single clean click (avoids double click / unfollow trigger)
+          safeClick(followBtn);
 
           console.log('[LinkedIn Outreach] button clicked');
           sendStep('button clicked', 'info');
+          
+          // Wait for any popups to render
+          await delay(1500);
+
+          // Handle any confirmation popup (Cancel) or notification prompt (Not now)
+          await dismissPostFollowModals();
+
           sendStep('Followed successfully.', 'success');
-          await delay(2000);
           return { followed: true, alreadyFollowing: false };
         } catch (clickErr) {
           console.warn('[LinkedIn Outreach] Error clicking follow button:', clickErr);
@@ -565,6 +645,7 @@
 
     console.log('[LinkedIn Outreach] Follow button not found within timeout. Proceeding normally.');
     sendStep('Follow button not found. Proceeding normally...', 'info');
+    await dismissPostFollowModals();
     return { followed: false, alreadyFollowing: false };
   }
 
@@ -689,6 +770,7 @@
 
     // Step 0: Follow Company before sending message
     await handleFollowAction(6000);
+    await dismissPostFollowModals();
 
     // 2. Find Message Button
     sendStep('Finding Message button', 'info');
@@ -874,6 +956,7 @@
 
     // Step 0: Follow Profile if available before sending connection request
     await handleFollowAction(4000);
+    await dismissPostFollowModals();
 
     // 2. Check if connection is already Pending
     for (const sel of SELECTORS.pending) {
