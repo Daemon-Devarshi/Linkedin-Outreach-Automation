@@ -32,7 +32,7 @@ export const SELECTORS = {
     message: 'main a:has-text("Message"):visible, main button:has-text("Message"):visible',
     
     // Follow Button
-    followBtn: 'button.org-company-follow-button:visible, button.follow:visible, button[aria-label="Follow"]:visible, button[aria-label^="Follow"]:visible, button.org-top-card-primary-actions__action:has-text("Follow"):visible, button:has-text("Follow"):visible, a:has-text("Follow"):visible',
+    followBtn: 'button[aria-label^="Follow"]:visible, button[aria-label*="Follow"]:visible, button:has(svg#add-small):visible, button.org-company-follow-button:visible, button.follow:visible, button.org-top-card-primary-actions__action:has-text("Follow"):visible, button:has-text("Follow"):visible, a:has-text("Follow"):visible',
 
     // Invitation Modal
     addNoteBtn: 'a:has-text("Add a note"):visible, button:has-text("Add a note"):visible, [aria-label="Add a note"]:visible',

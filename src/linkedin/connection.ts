@@ -10,23 +10,26 @@ import { LinkedInMessageRecord } from '../input/json.js';
 export async function clickFollowButton(page: Page): Promise<boolean> {
   try {
     const followBtn = page.locator(SELECTORS.connection.followBtn).first();
-    const isVisible = await followBtn.isVisible().catch(() => false);
+    const isVisible = await followBtn.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false);
     if (!isVisible) {
       return false;
     }
 
+    const ariaLabel = (await followBtn.getAttribute('aria-label').catch(() => '')) || '';
     const ariaPressed = await followBtn.getAttribute('aria-pressed').catch(() => null);
     const text = (await followBtn.innerText().catch(() => '')).trim().toLowerCase();
     
     // Skip if already followed or button indicates "Following"
-    if (ariaPressed === 'true' || text === 'following') {
+    if (ariaPressed === 'true' || text === 'following' || ariaLabel.toLowerCase().startsWith('following') || ariaLabel.toLowerCase().startsWith('unfollow')) {
+      logger.info('Already following profile/company.');
       return false;
     }
 
     logger.info('Finding Follow button...');
+    await followBtn.scrollIntoViewIfNeeded().catch(() => {});
     await followBtn.evaluate((el: HTMLElement) => el.click()).catch(() => followBtn.click({ force: true }));
     logger.info('button clicked');
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
     return true;
   } catch (error: any) {
     logger.warn(`Follow action error: ${error.message}`);

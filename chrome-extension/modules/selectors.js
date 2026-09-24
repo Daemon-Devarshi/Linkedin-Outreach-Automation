@@ -59,10 +59,14 @@ export const SELECTORS = {
 
     // Follow button
     followBtn: [
+      'button[aria-label^="Follow "]',
+      'button[aria-label^="Follow"]',
+      'button[aria-label="Follow"]',
+      'button:has(svg#add-small)',
+      'button:has(svg[id="add-small"])',
+      'button:has(svg[data-test-icon*="add"])',
       'button.org-company-follow-button',
       'button.follow',
-      'button[aria-label="Follow"]',
-      'button[aria-label^="Follow"]',
       'button.org-top-card-primary-actions__action',
       'button:has-text("Follow")',
       'a:has-text("Follow")'
