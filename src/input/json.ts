@@ -3,9 +3,13 @@ import { MESSAGES_FILE, DATA_DIR } from '../config/constants.js';
 import logger from '../logging/logger.js';
 
 export interface LinkedInMessageRecord {
+  rowIndex?: number;
+  name?: string;
   username: string;
   url: string;
   message: string;
+  status?: string;
+  timestamp?: string;
 }
 
 /**

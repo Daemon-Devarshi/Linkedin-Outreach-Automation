@@ -34,6 +34,12 @@ export const SELECTORS = {
     // Follow Button
     followBtn: 'button[aria-label^="Follow"]:visible, button[aria-label*="Follow"]:visible, button:has(svg#add-small):visible, button.org-company-follow-button:visible, button.follow:visible, button.org-top-card-primary-actions__action:has-text("Follow"):visible, button:has-text("Follow"):visible, a:has-text("Follow"):visible',
 
+    // Skip turning on notifications post-follow popup ("Not now")
+    skipNotificationsBtn: 'button[aria-label*="Skip turning on all notifications"]:visible, button:has-text("Not now"):visible, button.artdeco-button:has-text("Not now"):visible',
+
+    // Confirmation Modal Cancel Button
+    cancelModalBtn: 'button[data-test-dialog-secondary-btn]:has-text("Cancel"):visible, button.artdeco-modal__confirm-dialog-btn:has-text("Cancel"):visible, button:has-text("Cancel"):visible',
+
     // Invitation Modal
     addNoteBtn: 'a:has-text("Add a note"):visible, button:has-text("Add a note"):visible, [aria-label="Add a note"]:visible',
     sendWithoutNoteBtn: 'a:has-text("Send without a note"):visible, button:has-text("Send without a note"):visible',

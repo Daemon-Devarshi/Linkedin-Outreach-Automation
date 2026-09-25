@@ -1,50 +1,53 @@
 import dotenv from 'dotenv';
-import { promptUsername, promptPassword } from '../input/prompts.js';
+import logger from '../logging/logger.js';
 
 dotenv.config();
 
 export interface EnvConfig {
   linkedinUsername: string;
   linkedinPassword: string;
+  googleSheetWebAppLink: string;
+  senderName: string;
+  targetType: string;
   headless: boolean;
 }
 
 let cachedConfig: EnvConfig | null = null;
 
 /**
- * Loads configuration from environment variables (.env) or CLI prompts.
- * Guarantees that credentials will be filled.
+ * Loads configuration from environment variables (.env).
+ * Throws an explicit error if required configuration variables are missing.
  */
 export async function getEnvConfig(): Promise<EnvConfig> {
   if (cachedConfig) {
     return cachedConfig;
   }
 
-  let username = process.env.LINKEDIN_USERNAME || '';
-  let password = process.env.LINKEDIN_PASSWORD || '';
+  const username = (process.env.LINKEDIN_USERNAME || process.env.LINKEDIN_USER || '').trim();
+  const password = (process.env.LINKEDIN_PASSWORD || process.env.LINKEDIN_PASS || '').trim();
+  const googleSheetWebAppLink = (process.env.GOOGLE_SHEET_WEB_APP_LINK || process.env.GOOGLE_SHEET_WEB_APP_URL || '').trim();
+  const senderName = (process.env.SENDER_NAME || '').trim();
+  const targetType = (process.env.TARGET_TYPE || '').trim();
   const headless = process.env.HEADLESS === 'true';
 
-  if (!username) {
-    console.log('LinkedIn Username not found in .env.');
-    username = await promptUsername();
-    while (!username) {
-      console.log('Username cannot be empty.');
-      username = await promptUsername();
-    }
-  }
+  const missing: string[] = [];
+  if (!username) missing.push('LINKEDIN_USERNAME');
+  if (!password) missing.push('LINKEDIN_PASSWORD');
+  if (!googleSheetWebAppLink) missing.push('GOOGLE_SHEET_WEB_APP_LINK');
 
-  if (!password) {
-    console.log('LinkedIn Password not found in .env.');
-    password = await promptPassword();
-    while (!password) {
-      console.log('Password cannot be empty.');
-      password = await promptPassword();
-    }
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variable(s) in .env: ${missing.join(', ')}. ` +
+      `Please fill in these values in your .env file.`
+    );
   }
 
   cachedConfig = {
     linkedinUsername: username,
     linkedinPassword: password,
+    googleSheetWebAppLink,
+    senderName,
+    targetType,
     headless,
   };
 

@@ -4,8 +4,49 @@ import logger from '../logging/logger.js';
 import { LinkedInMessageRecord } from '../input/json.js';
 
 /**
+ * Checks for and handles any popups/dialogs (e.g. "Cancel" confirmation or "Not now" notification prompts):
+ * 1. Checks if a modal with a "Cancel" button appears and clicks it.
+ * 2. Checks if a notification prompt with a "Not now" button appears and clicks it.
+ */
+export async function dismissNotificationPrompt(page: Page): Promise<boolean> {
+  let handledAny = false;
+
+  // Step 1: Check for "Cancel" button on modal dialogs
+  try {
+    const cancelBtn = page.locator(SELECTORS.connection.cancelModalBtn).first();
+    const isCancelVisible = await cancelBtn.waitFor({ state: 'visible', timeout: 2000 }).then(() => true).catch(() => false);
+    if (isCancelVisible) {
+      logger.info('Finding "Cancel" button for modal dialog...');
+      logger.info('Clicking "Cancel" button...');
+      await cancelBtn.evaluate((el: HTMLElement) => el.click()).catch(() => cancelBtn.click({ force: true }));
+      await page.waitForTimeout(1500);
+      handledAny = true;
+    }
+  } catch {
+    // Ignore if Cancel modal is not present
+  }
+
+  // Step 2: Check for "Not now" button on notifications prompt
+  try {
+    const skipBtn = page.locator(SELECTORS.connection.skipNotificationsBtn).first();
+    const isSkipVisible = await skipBtn.waitFor({ state: 'visible', timeout: 2000 }).then(() => true).catch(() => false);
+    if (isSkipVisible) {
+      logger.info('Finding "Not now" button for notifications prompt...');
+      logger.info('Clicking "Not now" button to dismiss notification prompt...');
+      await skipBtn.evaluate((el: HTMLElement) => el.click()).catch(() => skipBtn.click({ force: true }));
+      await page.waitForTimeout(1500);
+      handledAny = true;
+    }
+  } catch {
+    // Ignore if notification prompt is not present
+  }
+
+  return handledAny;
+}
+
+/**
  * Checks for and clicks the Follow button if present on the profile/company header.
- * Logs "button clicked" when triggered, then allows the automation to proceed normally.
+ * Logs "button clicked" when triggered, handles any notification prompt, then allows the automation to proceed normally.
  */
 export async function clickFollowButton(page: Page): Promise<boolean> {
   try {
@@ -30,6 +71,10 @@ export async function clickFollowButton(page: Page): Promise<boolean> {
     await followBtn.evaluate((el: HTMLElement) => el.click()).catch(() => followBtn.click({ force: true }));
     logger.info('button clicked');
     await page.waitForTimeout(2000);
+
+    // After following, dismiss notification prompt if it appears ("Not now")
+    await dismissNotificationPrompt(page);
+
     return true;
   } catch (error: any) {
     logger.warn(`Follow action error: ${error.message}`);
@@ -40,10 +85,11 @@ export async function clickFollowButton(page: Page): Promise<boolean> {
 /**
  * Handles the complete connection action:
  * 1. Checks and clicks the Follow button if available on the profile.
- * 2. Checks if connection is already pending or if user is already connected (skips if so).
- * 3. Clicks Connect (tries direct button, falls back to "More" actions menu).
- * 4. Handles invitation modal: clicks "Add a note", fills the text area, and clicks Send.
- * 5. Verifies the request was successfully sent.
+ * 2. Dismisses notification popups ("Not now") if displayed.
+ * 3. Checks if connection is already pending or if user is already connected (skips if so).
+ * 4. Clicks Connect (tries direct button, falls back to "More" actions menu).
+ * 5. Handles invitation modal: clicks "Add a note", fills the text area, and clicks Send.
+ * 6. Verifies the request was successfully sent.
  * 
  * @param page Playwright Page instance.
  * @param record Message record containing URL and personalized message.
@@ -51,6 +97,9 @@ export async function clickFollowButton(page: Page): Promise<boolean> {
 export async function sendConnectionRequest(page: Page, record: LinkedInMessageRecord): Promise<void> {
   // Click follow button before sending message if present
   await clickFollowButton(page);
+
+  // Safeguard: Ensure any notification prompt ("Not now") is dismissed
+  await dismissNotificationPrompt(page);
 
   logger.info('Analyzing profile connection state...');
 
