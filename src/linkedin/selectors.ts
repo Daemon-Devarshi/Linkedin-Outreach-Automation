@@ -45,5 +45,14 @@ export const SELECTORS = {
     sendWithoutNoteBtn: 'a:has-text("Send without a note"):visible, button:has-text("Send without a note"):visible',
     noteTextarea: 'textarea:visible, [contenteditable="true"]:visible, div[role="textbox"]:visible, textarea[name="message"]:visible, textarea#custom-message:visible',
     sendInvitationBtn: 'button:has-text("Send"):visible, a:has-text("Send"):visible, button[aria-label="Send now"]:visible, button[aria-label="Send invitation"]:visible, button[aria-label^="Send"]:visible',
+  },
+
+  // Organization / Company Messaging Workflow
+  company: {
+    messageBtn: 'main button:has-text("Message"):visible, .org-top-card button:has-text("Message"):visible, button.org-top-card-primary-actions__action:has-text("Message"):visible, button:has(span.artdeco-button__text:has-text("Message")):visible, button:has-text("Message"):visible, a:has-text("Message"):visible',
+    topicSelect: 'select#msg-shared-modals-msg-page-modal-presenter-conversation-topic, select[id*="conversation-topic"], select[name*="topic"]',
+    messageTextarea: 'textarea#org-message-page-modal-message, textarea[name="message"], textarea.artdeco-text-input__textarea',
+    sendBtn: 'button:has-text("Send message"):visible, button.artdeco-button--primary:has-text("Send message"):visible, button:has(span.artdeco-button__text:has-text("Send message")):visible',
   }
 };
+

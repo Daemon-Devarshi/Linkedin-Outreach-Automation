@@ -49,9 +49,9 @@ export function formatMessage(
       .replace(/\{target_type\}/gi, targetType);
   }
 
-  // Trim to 200 characters limit for LinkedIn connection note
-  if (msg.length > 200) {
-    msg = msg.substring(0, 197) + '...';
+  // Trim to 750 characters limit (LinkedIn organization message limit; connection notes are trimmed to 200 during connection request)
+  if (msg.length > 750) {
+    msg = msg.substring(0, 747) + '...';
   }
 
   return msg;

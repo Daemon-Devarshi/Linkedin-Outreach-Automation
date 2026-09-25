@@ -4,7 +4,6 @@ export const WORKSPACE_ROOT = process.cwd();
 
 export const DATA_DIR = path.join(WORKSPACE_ROOT, 'data');
 export const SESSIONS_DIR = path.join(WORKSPACE_ROOT, 'sessions', 'linkedin');
-export const SCREENSHOTS_DIR = path.join(WORKSPACE_ROOT, 'screenshots', 'linkedin');
 export const LOGS_DIR = path.join(WORKSPACE_ROOT, 'logs');
 
 export const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');

@@ -46,8 +46,8 @@ export async function loadAndValidateProfile(page: Page, url: string): Promise<b
       throw new Error('Profile does not exist (LinkedIn shows "This page doesn’t exist")');
     }
 
-    // Wait dynamically for the profile page layout to render (up to 15 seconds)
-    const profileLayout = page.locator('main').first();
+    // Wait dynamically for the profile/company page layout to render (up to 15 seconds)
+    const profileLayout = page.locator('main, .org-top-card, .scaffold-layout__main').first();
     try {
       await profileLayout.waitFor({ state: 'visible', timeout: 15000 });
     } catch {

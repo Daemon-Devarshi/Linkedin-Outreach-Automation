@@ -3,7 +3,6 @@ import { LinkedInMessageRecord } from '../input/json.js';
 import { loadAndValidateProfile } from '../linkedin/profile.js';
 import { sendConnectionRequest } from '../linkedin/connection.js';
 import { markProfileSuccess, markProfileFailed } from '../tracking/processedProfiles.js';
-import { takeFailureScreenshot } from '../logging/screenshots.js';
 import logger from '../logging/logger.js';
 
 export interface WorkflowResult {
@@ -16,7 +15,7 @@ export interface WorkflowResult {
  * Handles the complete connection process for a single profile:
  * 1. Navigates to the profile page.
  * 2. Connects and inputs the custom message note.
- * 3. Handles any unexpected errors by logging, taking failure screenshot, and marking status.
+ * 3. Handles any unexpected errors by logging and marking status.
  * 
  * @param page Playwright Page instance
  * @param record Message record details (username, URL, message)
@@ -45,11 +44,6 @@ export async function runProfileWorkflow(
     // Log failure details
     logger.error(`FAILED: ${username}`);
     logger.error(`Reason: ${errorMsg}`);
-
-    // Capture a failure screenshot if the page/browser is still active
-    if (!page.isClosed() && page.context().browser()?.isConnected()) {
-      await takeFailureScreenshot(page, username).catch(() => {});
-    }
 
     // Record tracking status as FAILED (re-attemptable on subsequent runs)
     markProfileFailed(username, errorMsg);
